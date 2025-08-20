@@ -28,10 +28,10 @@ class Calculadora(QWidget):
         # ---------- Configuraciones basicas para la ventana ----------
 
         self.setWindowTitle("Calculadora - Modulo 1")
-        self.setGeometry(200, 200, 400, 400)
+        self.setGeometry(200, 200, 400, 400) # Los valores son: pos_x, pos_y, ancho, alto
 
         # Establece el maximo tamaño para la ventana.
-        self.setFixedSize(400, 400)
+        self.setFixedSize(400, 400) # Ancho y alto
 
         # Estilo de la ventana: Ventana Blanco, Letras Negro.
         self.setStyleSheet(
