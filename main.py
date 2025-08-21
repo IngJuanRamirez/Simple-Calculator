@@ -70,7 +70,7 @@ class Calculadora(QWidget):
         btn_ce = QPushButton("C")
         btn_ce.clicked.connect(lambda: self.entrada_datos("clear"))
         btn_retroceso = QPushButton("←")
-        btn_retroceso.clicked.connect(lambda: self.entrada_datos("←"))
+        btn_retroceso.clicked.connect(lambda: self.entrada_datos("back"))
         
 
         # ---------- Fila 2 ----------
@@ -79,7 +79,8 @@ class Calculadora(QWidget):
         btn_log = QPushButton("Log")
         btn_sqrt = QPushButton("√")
         btn_potencia = QPushButton("X" + "\u02b8") # Utilizo unicode para la y en superíndice.
-        btn_division = QPushButton("/")
+        btn_division = QPushButton("%")
+        btn_division.clicked.connect(lambda: self.entrada_datos("%"))
 
 
         # ---------- Fila 3 ----------
@@ -92,6 +93,7 @@ class Calculadora(QWidget):
         btn_9 = QPushButton("9")
         btn_9.clicked.connect(lambda: self.entrada_datos("9"))
         btn_multiplicacion = QPushButton("*")
+        btn_multiplicacion.clicked.connect(lambda: self.entrada_datos("*"))
 
 
         # ---------- Fila 4 ----------
@@ -104,6 +106,7 @@ class Calculadora(QWidget):
         btn_6 = QPushButton("6")
         btn_6.clicked.connect(lambda: self.entrada_datos("6"))
         btn_resta = QPushButton("-")
+        btn_resta.clicked.connect(lambda: self.entrada_datos("-"))
 
 
         # ---------- Fila 5 ----------
@@ -116,6 +119,7 @@ class Calculadora(QWidget):
         btn_3 = QPushButton("3")
         btn_3.clicked.connect(lambda: self.entrada_datos("3"))
         btn_suma = QPushButton("+")
+        btn_suma.clicked.connect(lambda: self.entrada_datos("+"))
         
 
         # ---------- Fila 5 ----------
@@ -125,6 +129,7 @@ class Calculadora(QWidget):
         btn_0 = QPushButton("0")
         btn_0.clicked.connect(lambda: self.entrada_datos("0"))
         btn_decimal = QPushButton(".")
+        btn_decimal.clicked.connect(lambda: self.entrada_datos("."))
         btn_igual = QPushButton("=")
 
 
@@ -229,10 +234,13 @@ class Calculadora(QWidget):
         text_stack = self.txtDisplay.text()
 
         try:
+            
             if tipo == "clear":
                 new_stack = ""
-            elif tipo == "←":
-                new_stack = text_stack[:-1] # Quitamos el ultimo carcarter de la cadena. 
+            elif tipo == "back":
+                new_stack = text_stack[:-1] # Quitamos el ultimo carcarter de la cadena.
+            elif tipo == "." and "." in text_stack:
+                return # En caso de que se quiera agregar un doble decimal.
 
             else:
                 new_stack = text_stack + tipo
