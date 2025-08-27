@@ -1,7 +1,7 @@
 import sys, math
 # Libreria de Pyside6 para usar Qt
 from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QMessageBox
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtCore import Qt
 
 
@@ -40,18 +40,26 @@ class Calculadora(QWidget):
             "font-weight: bold;"
             )
 
-        # Entrada de texto
-        self.txtDisplay = QLineEdit(self)
+        # Cargar la fuente desde la ruta específica
+        font_id = QFontDatabase.addApplicationFont("src/fonts/digital-7/digital-7 (mono).ttf")
+        
+        # Verificar si la fuente se cargó correctamente
+        if font_id != -1:
+            family = QFontDatabase.applicationFontFamilies(font_id)[0]
+            # Establecer la fuente para el display
+            txt_display_font = QFont(family, 24)
+            self.txtDisplay = QLineEdit(self)
+            self.txtDisplay.setFont(txt_display_font)
+        else:
+            # Si no se pudo cargar, usar una fuente predeterminada
+            self.txtDisplay = QLineEdit(self)
+            self.txtDisplay.setFont(QFont("Arial", 24))
+            print("Error: No se pudo cargar la fuente desde la ruta especificada.")
+        
+        self.txtDisplay.setAlignment(Qt.AlignmentFlag.AlignRight)
         # Establecemos como falso la entrada de texto
         self.txtDisplay.setDisabled(True)
         self.txtDisplay.setFixedSize(380, 50)
-
-        # Establecemos la fuente de la pantalla donde se mostraran los numeros, sera diferente de las demas en la calculadora.
-        txt_diplay_font = QFont("Arial", 24)
-        self.txtDisplay.setFont(txt_diplay_font)
-        # Ajustamos la alineacion del texto a la derecha
-        self.txtDisplay.setAlignment(Qt.AlignmentFlag.AlignRight)
-
 
         # ---------- Botones de Calculadora ----------
 
@@ -68,8 +76,13 @@ class Calculadora(QWidget):
         btn_factorial = QPushButton("n!")
         btn_porcentaje = QPushButton("%")
         btn_ce = QPushButton("C")
-        btn_ce.clicked.connect(lambda: self.entrada_datos("clear"))
         btn_retroceso = QPushButton("←")
+
+        # Un color rojo para los botones de borrado.
+        btn_ce.setStyleSheet("background-color: red; color: black;")
+        btn_retroceso.setStyleSheet("background-color: red; color: black;")
+
+        btn_ce.clicked.connect(lambda: self.entrada_datos("clear"))
         btn_retroceso.clicked.connect(lambda: self.entrada_datos("back"))
         
 
