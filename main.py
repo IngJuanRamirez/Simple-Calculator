@@ -98,6 +98,7 @@ class Calculadora(QWidget):
 
         btn_a = QPushButton("A")
         btn_factorial = QPushButton("n!")
+        btn_factorial.clicked.connect(lambda: self.entrada_datos("factorial"))
         btn_porcentaje = QPushButton("%")
         btn_ce = QPushButton("C")
         btn_retroceso = QPushButton("←")
@@ -114,8 +115,11 @@ class Calculadora(QWidget):
 
         btn_b = QPushButton("B")
         btn_log = QPushButton("Log")
+        btn_log.clicked.connect(lambda: self.entrada_datos("log"))
         btn_sqrt = QPushButton("√")
+        btn_sqrt.clicked.connect(lambda: self.entrada_datos("sqrt"))
         btn_potencia = QPushButton("X" + "\u02b8") # Utilizo unicode para la y en superíndice.
+        btn_potencia.clicked.connect(lambda: self.entrada_datos("**"))
         btn_division = QPushButton("/")
         btn_division.clicked.connect(lambda: self.entrada_datos("/"))
 
@@ -274,107 +278,128 @@ class Calculadora(QWidget):
         self.setLayout(layout)
 
     
+    # Reemplaza tu función entrada_datos por completo con esta versión
+
     def entrada_datos(self, valor: str):
         """
         Gestiona la entrada de datos y la lógica de una calculadora estándar.
         """
-        # Define los operadores para facilitar las comprobaciones
-        OPERADORES = ["+", "-", "*", "/"]
+        # Operadores que necesitan dos números (binarios)
+        OPERADORES_BINARIOS = ["+", "-", "*", "/", "**", "%"]
+        # Operadores que se aplican a un solo número (unarios)
+        OPERADORES_UNARIOS = ["sqrt", "factorial", "log"]
 
-        # --- Lógica para NÚMEROS (0-9) ---
-        if valor.isdigit():
-            # Si estábamos esperando el segundo número, limpiamos la pantalla antes de escribirlo
-            if self.esperando_segundo_numero:
-                self.txtDisplay.setText(valor)
-                self.esperando_segundo_numero = False
-            else:
-                # Si el display es "0", lo reemplazamos, si no, lo añadimos
-                if self.txtDisplay.text() == "0":
+        try:
+            # --- Lógica para NÚMEROS (0-9) ---
+            if valor.isdigit():
+                if self.esperando_segundo_numero:
                     self.txtDisplay.setText(valor)
+                    self.esperando_segundo_numero = False
                 else:
-                    self.txtDisplay.setText(self.txtDisplay.text() + valor)
+                    if self.txtDisplay.text() == "0":
+                        self.txtDisplay.setText(valor)
+                    else:
+                        self.txtDisplay.setText(self.txtDisplay.text() + valor)
 
-        # --- Lógica para el PUNTO DECIMAL (.) ---
-        elif valor == ".":
-            # Solo añade un punto si no hay uno ya en el número actual
-            if "." not in self.txtDisplay.text():
-                self.txtDisplay.setText(self.txtDisplay.text() + ".")
-
-        # --- Lógica para OPERADORES (+, -, *, /) ---
-        elif valor in OPERADORES:
-            # --- ¡INICIO DE LA CORRECCIÓN! ---
-            # Si ya tenemos un primer número y estamos listos para operar,
-            # calcula el resultado parcial primero.
-            if self.primer_numero is not None and not self.esperando_segundo_numero:
-                # Reutilizamos la lógica del botón igual para calcular el resultado intermedio
-                self.entrada_datos("=")
-            # --- ¡FIN DE LA CORRECCIÓN! ---
-
-            # Guardamos el primer número y el nuevo operador
-            self.primer_numero = float(self.txtDisplay.text())
-            self.operador_actual = valor
-            # Activamos la bandera para que el próximo número limpie la pantalla
-            self.esperando_segundo_numero = True
-
-        # --- Lógica para el botón IGUAL (=) ---
-        elif valor == "=":
-            if self.operador_actual and self.primer_numero is not None:
-                segundo_numero = float(self.txtDisplay.text())
+            # --- Lógica para el PUNTO DECIMAL (.) ---
+            elif valor == ".":
+                if "." not in self.txtDisplay.text():
+                    self.txtDisplay.setText(self.txtDisplay.text() + ".")
+            
+            # --- Lógica para OPERADORES UNARIOS (sqrt, factorial, etc.) ---
+            elif valor in OPERADORES_UNARIOS:
+                numero_actual = float(self.txtDisplay.text())
                 resultado = 0.0
 
-                # Realizamos el cálculo según el operador guardado
-                if self.operador_actual == "+":
-                    resultado = self.primer_numero + segundo_numero
-                elif self.operador_actual == "-":
-                    resultado = self.primer_numero - segundo_numero
-                elif self.operador_actual == "*":
-                    resultado = self.primer_numero * segundo_numero
-                elif self.operador_actual == "/":
-                    if segundo_numero == 0:
-                        QMessageBox.critical(self, "Error", "No se puede dividir por cero.")
+                if valor == "sqrt":
+                    if numero_actual < 0:
+                        QMessageBox.critical(self, "Error", "Entrada inválida para raíz cuadrada.")
                         return
-                    resultado = self.primer_numero / segundo_numero
+                    resultado = math.sqrt(numero_actual)
+                elif valor == "factorial":
+                    if numero_actual < 0 or numero_actual != int(numero_actual):
+                        QMessageBox.critical(self, "Error", "Entrada inválida para factorial.")
+                        return
+                    resultado = float(math.factorial(int(numero_actual)))
+                elif valor == "log":
+                    if numero_actual <= 0:
+                        QMessageBox.critical(self, "Error", "Entrada inválida para logaritmo.")
+                        return
+                    resultado = math.log10(numero_actual)
                 
-                # Si el resultado no tiene decimales (ej. 10.0), lo muestra como entero (10)
-                if resultado.is_integer():
-                    self.txtDisplay.setText(str(int(resultado)))
-                else:
-                    self.txtDisplay.setText(str(resultado))
-                
-                # Llamamos a la función conversor con el resultado
-                self.display_bin.setText(self.conversor(str(int(resultado)), "bin"))
-                self.display_hex.setText(self.conversor(str(int(resultado)), "hex"))
-                self.display_oct.setText(self.conversor(str(int(resultado)), "oct"))
-                self.display_dec.setText(self.conversor(str(int(resultado)), "dec"))
-                
-                # Reseteamos el estado para futuras operaciones
-                self.primer_numero = None
-                self.operador_actual = ""
+                self._actualizar_displays(resultado)
                 self.esperando_segundo_numero = True
 
-        # --- Lógica para LIMPIAR (C) ---
-        elif valor == "clear":
-            self.txtDisplay.setText("0")
-            # --- ¡INICIO DE LA CORRECCIÓN! ---
-            # Limpiar todos los displays de conversión
-            self.display_bin.clear()
-            self.display_hex.clear()
-            self.display_oct.clear()
-            self.display_dec.clear()
-            # --- ¡FIN DE LA CORRECCIÓN! ---
-            self.primer_numero = None
-            self.operador_actual = ""
-            self.esperando_segundo_numero = False
+            # --- Lógica para OPERADORES BINARIOS (+, -, *, /, **, %) ---
+            elif valor in OPERADORES_BINARIOS:
+                if self.primer_numero is not None and not self.esperando_segundo_numero:
+                    self.entrada_datos("=")
+                
+                self.primer_numero = float(self.txtDisplay.text())
+                self.operador_actual = valor
+                self.esperando_segundo_numero = True
 
-        # --- Lógica para RETROCESO (←) ---
-        elif valor == "back":
-            texto_actual = self.txtDisplay.text()
-            nuevo_texto = texto_actual[:-1]
-            # Si al borrar queda vacío, ponemos "0"
-            if not nuevo_texto:
+            # --- Lógica para el botón IGUAL (=) ---
+            elif valor == "=":
+                if self.operador_actual and self.primer_numero is not None:
+                    segundo_numero = float(self.txtDisplay.text())
+                    resultado = 0.0
+
+                    if self.operador_actual == "+": resultado = self.primer_numero + segundo_numero
+                    elif self.operador_actual == "-": resultado = self.primer_numero - segundo_numero
+                    elif self.operador_actual == "*": resultado = self.primer_numero * segundo_numero
+                    elif self.operador_actual == "**": resultado = self.primer_numero ** segundo_numero
+                    elif self.operador_actual == "%": resultado = self.primer_numero % segundo_numero
+                    elif self.operador_actual == "/":
+                        if segundo_numero == 0:
+                            QMessageBox.critical(self, "Error", "No se puede dividir por cero.")
+                            return
+                        resultado = self.primer_numero / segundo_numero
+                    
+                    self._actualizar_displays(resultado)
+                    self.primer_numero = None
+                    self.operador_actual = ""
+                    self.esperando_segundo_numero = True
+
+            # --- Lógica para LIMPIAR (C) ---
+            elif valor == "clear":
                 self.txtDisplay.setText("0")
-            else:
-                self.txtDisplay.setText(nuevo_texto)
+                self.display_bin.clear()
+                self.display_hex.clear()
+                self.display_oct.clear()
+                self.display_dec.clear()
+                self.primer_numero = None
+                self.operador_actual = ""
+                self.esperando_segundo_numero = False
+
+            # --- Lógica para RETROCESO (←) ---
+            elif valor == "back":
+                texto_actual = self.txtDisplay.text()
+                nuevo_texto = texto_actual[:-1]
+                self.txtDisplay.setText(nuevo_texto if nuevo_texto else "0")
+
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Ocurrió un error: {e}")
+            self.entrada_datos("clear")
+
+    # --- NUEVA FUNCIÓN AUXILIAR ---
+    # Añade esta función dentro de tu clase Calculadora
+
+    def _actualizar_displays(self, resultado_numerico: float):
+        """Función auxiliar para actualizar todos los displays con un resultado."""
+        # Muestra el resultado en el display principal
+        if resultado_numerico.is_integer():
+            self.txtDisplay.setText(str(int(resultado_numerico)))
+        else:
+            # Formateamos para evitar exceso de decimales
+            self.txtDisplay.setText(f"{resultado_numerico:.10g}")
+
+        # Actualiza los displays de conversión con la parte entera del resultado
+        numero_entero_str = str(int(resultado_numerico))
+        self.display_bin.setText(self.conversor(numero_entero_str, "bin"))
+        self.display_hex.setText(self.conversor(numero_entero_str, "hex"))
+        self.display_oct.setText(self.conversor(numero_entero_str, "oct"))
+        self.display_dec.setText(self.conversor(numero_entero_str, "dec"))
 
 
     def conversor(self, number: str, tipo: str) -> str:
