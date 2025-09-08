@@ -61,6 +61,10 @@ class Calculadora(QWidget):
         self.txtDisplay.setDisabled(True)
         self.txtDisplay.setFixedSize(380, 50)
 
+        self.primer_numero = None
+        self.operador_actual = ""
+        self.esperando_segundo_numero = False
+
         # ---------- Botones de Calculadora ----------
 
         # ---------- Resultados ----------
@@ -69,6 +73,26 @@ class Calculadora(QWidget):
         label_dec = QLabel("Dec: ")
         label_oct = QLabel("Oct: ")
         label_bin = QLabel("Bin: ")
+        
+        # Display Bin
+        self.display_bin = QLineEdit(self)
+        self.display_bin.setDisabled(True)
+        self.display_bin.setStyleSheet("border: none;")
+        
+        # Display Hex
+        self.display_hex = QLineEdit(self)
+        self.display_hex.setDisabled(True)
+        self.display_hex.setStyleSheet("border: none;")
+
+        # Display Oct
+        self.display_oct = QLineEdit(self)
+        self.display_oct.setDisabled(True)
+        self.display_oct.setStyleSheet("border: none;")
+
+        # Display Dec
+        self.display_dec = QLineEdit(self)
+        self.display_dec.setDisabled(True)
+        self.display_dec.setStyleSheet("border: none;")
 
         # ---------- Fila 1 ----------
 
@@ -92,8 +116,8 @@ class Calculadora(QWidget):
         btn_log = QPushButton("Log")
         btn_sqrt = QPushButton("√")
         btn_potencia = QPushButton("X" + "\u02b8") # Utilizo unicode para la y en superíndice.
-        btn_division = QPushButton("%")
-        btn_division.clicked.connect(lambda: self.entrada_datos("%"))
+        btn_division = QPushButton("/")
+        btn_division.clicked.connect(lambda: self.entrada_datos("/"))
 
 
         # ---------- Fila 3 ----------
@@ -144,7 +168,7 @@ class Calculadora(QWidget):
         btn_decimal = QPushButton(".")
         btn_decimal.clicked.connect(lambda: self.entrada_datos("."))
         btn_igual = QPushButton("=")
-
+        btn_igual.clicked.connect(lambda: self.entrada_datos("="))
 
 
 
@@ -158,10 +182,31 @@ class Calculadora(QWidget):
 
         # Resultados Hex, Dec, etc...
         resultados = QVBoxLayout()
-        resultados.addWidget(label_hex)
-        resultados.addWidget(label_dec)
-        resultados.addWidget(label_oct)
-        resultados.addWidget(label_bin)
+
+        # Hex
+        hex_result = QHBoxLayout()
+        hex_result.addWidget(label_hex)
+        hex_result.addWidget(self.display_hex)
+        resultados.addLayout(hex_result)
+        
+        # Dec
+        dec_result = QHBoxLayout()
+        dec_result.addWidget(label_dec)
+        dec_result.addWidget(self.display_dec)
+        resultados.addLayout(dec_result)
+
+        # Oct
+        oct_result = QHBoxLayout()
+        oct_result.addWidget(label_oct)
+        oct_result.addWidget(self.display_oct)
+        resultados.addLayout(oct_result)
+
+        # Bin
+        bin_result = QHBoxLayout()
+        bin_result.addWidget(label_bin)
+        bin_result.addWidget(self.display_bin)
+        resultados.addLayout(bin_result)
+
         layout.addLayout(resultados)
         
         
@@ -229,40 +274,172 @@ class Calculadora(QWidget):
         self.setLayout(layout)
 
     
-    def entrada_datos(self, tipo: str):
+    def entrada_datos(self, valor: str):
         """
-        Funcion de la clase Calculadora que toma los caracteres de los botones y los muestra en pantalla.
-
-        Args:
-            tipo (str): Tipo de operación a realizar. Valores válidos:
-                - "clear": Limpia todos los caracteres de la pantalla.
-                - "←": Limpia el ultimo caracter de la pantalla.
-                - "1, 2, 3...": Escribe los numeros decimales en pantalla.
-
-        Raises:
-            ValueError: Si la entrada no es válida o no es numérica o parte de la calculadora.
+        Gestiona la entrada de datos y la lógica de una calculadora estándar.
         """
+        # Define los operadores para facilitar las comprobaciones
+        OPERADORES = ["+", "-", "*", "/"]
 
-        new_stack = ""
-        text_stack = self.txtDisplay.text()
-
-        try:
-            
-            if tipo == "clear":
-                new_stack = ""
-            elif tipo == "back":
-                new_stack = text_stack[:-1] # Quitamos el ultimo carcarter de la cadena.
-            elif tipo == "." and "." in text_stack:
-                return # En caso de que se quiera agregar un doble decimal.
-
+        # --- Lógica para NÚMEROS (0-9) ---
+        if valor.isdigit():
+            # Si estábamos esperando el segundo número, limpiamos la pantalla antes de escribirlo
+            if self.esperando_segundo_numero:
+                self.txtDisplay.setText(valor)
+                self.esperando_segundo_numero = False
             else:
-                new_stack = text_stack + tipo
+                # Si el display es "0", lo reemplazamos, si no, lo añadimos
+                if self.txtDisplay.text() == "0":
+                    self.txtDisplay.setText(valor)
+                else:
+                    self.txtDisplay.setText(self.txtDisplay.text() + valor)
+
+        # --- Lógica para el PUNTO DECIMAL (.) ---
+        elif valor == ".":
+            # Solo añade un punto si no hay uno ya en el número actual
+            if "." not in self.txtDisplay.text():
+                self.txtDisplay.setText(self.txtDisplay.text() + ".")
+
+        # --- Lógica para OPERADORES (+, -, *, /) ---
+        elif valor in OPERADORES:
+            # --- ¡INICIO DE LA CORRECCIÓN! ---
+            # Si ya tenemos un primer número y estamos listos para operar,
+            # calcula el resultado parcial primero.
+            if self.primer_numero is not None and not self.esperando_segundo_numero:
+                # Reutilizamos la lógica del botón igual para calcular el resultado intermedio
+                self.entrada_datos("=")
+            # --- ¡FIN DE LA CORRECCIÓN! ---
+
+            # Guardamos el primer número y el nuevo operador
+            self.primer_numero = float(self.txtDisplay.text())
+            self.operador_actual = valor
+            # Activamos la bandera para que el próximo número limpie la pantalla
+            self.esperando_segundo_numero = True
+
+        # --- Lógica para el botón IGUAL (=) ---
+        elif valor == "=":
+            if self.operador_actual and self.primer_numero is not None:
+                segundo_numero = float(self.txtDisplay.text())
+                resultado = 0.0
+
+                # Realizamos el cálculo según el operador guardado
+                if self.operador_actual == "+":
+                    resultado = self.primer_numero + segundo_numero
+                elif self.operador_actual == "-":
+                    resultado = self.primer_numero - segundo_numero
+                elif self.operador_actual == "*":
+                    resultado = self.primer_numero * segundo_numero
+                elif self.operador_actual == "/":
+                    if segundo_numero == 0:
+                        QMessageBox.critical(self, "Error", "No se puede dividir por cero.")
+                        return
+                    resultado = self.primer_numero / segundo_numero
+                
+                # Si el resultado no tiene decimales (ej. 10.0), lo muestra como entero (10)
+                if resultado.is_integer():
+                    self.txtDisplay.setText(str(int(resultado)))
+                else:
+                    self.txtDisplay.setText(str(resultado))
+                
+                # Llamamos a la función conversor con el resultado
+                self.display_bin.setText(self.conversor(str(int(resultado)), "bin"))
+                self.display_hex.setText(self.conversor(str(int(resultado)), "hex"))
+                self.display_oct.setText(self.conversor(str(int(resultado)), "oct"))
+                self.display_dec.setText(self.conversor(str(int(resultado)), "dec"))
+                
+                # Reseteamos el estado para futuras operaciones
+                self.primer_numero = None
+                self.operador_actual = ""
+                self.esperando_segundo_numero = True
+
+        # --- Lógica para LIMPIAR (C) ---
+        elif valor == "clear":
+            self.txtDisplay.setText("0")
+            # --- ¡INICIO DE LA CORRECCIÓN! ---
+            # Limpiar todos los displays de conversión
+            self.display_bin.clear()
+            self.display_hex.clear()
+            self.display_oct.clear()
+            self.display_dec.clear()
+            # --- ¡FIN DE LA CORRECCIÓN! ---
+            self.primer_numero = None
+            self.operador_actual = ""
+            self.esperando_segundo_numero = False
+
+        # --- Lógica para RETROCESO (←) ---
+        elif valor == "back":
+            texto_actual = self.txtDisplay.text()
+            nuevo_texto = texto_actual[:-1]
+            # Si al borrar queda vacío, ponemos "0"
+            if not nuevo_texto:
+                self.txtDisplay.setText("0")
+            else:
+                self.txtDisplay.setText(nuevo_texto)
+
+
+    def conversor(self, number: str, tipo: str) -> str:
+        """
+        Convierte un número decimal (en formato string) a otro sistema numérico
+        utilizando el algoritmo de división y residuo.
+        
+        Args:
+            number (str): El número en base 10 para convertir.
+            tipo (str): El sistema al que se convertirá ("bin", "oct", "hex", "dec").
             
-            self.txtDisplay.setText(new_stack)
+        Returns:
+            str: El número convertido en formato de cadena de texto.
+        """
+        try:
+            decimal = int(number)
+        except (ValueError, TypeError):
+            return "Error"
 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Entrada inválida.\n{e}")
+        # Caso especial: si el número es 0, el resultado es "0" en cualquier base.
+        if decimal == 0:
+            return "0"
 
+        # --- Conversión a Binario (Base 2) ---
+        if tipo == "bin":
+            resultado_str = ""
+            num_temp = decimal
+            while num_temp > 0:
+                residuo = num_temp % 2
+                resultado_str = str(residuo) + resultado_str
+                num_temp //= 2  # División entera
+            return resultado_str
+
+        # --- Conversión a Octal (Base 8) ---
+        elif tipo == "oct":
+            resultado_str = ""
+            num_temp = decimal
+            while num_temp > 0:
+                residuo = num_temp % 8
+                resultado_str = str(residuo) + resultado_str
+                num_temp //= 8
+            return resultado_str
+
+        # --- Conversión a Hexadecimal (Base 16) ---
+        elif tipo == "hex":
+            # Mapa para los dígitos mayores a 9 (A=10, B=11, etc.)
+            mapa_hex = "0123456789ABCDEF"
+            resultado_str = ""
+            num_temp = decimal
+            while num_temp > 0:
+                residuo = num_temp % 16
+                # Usamos el residuo como índice para obtener el caracter correcto
+                resultado_str = mapa_hex[residuo] + resultado_str
+                num_temp //= 16
+            return resultado_str
+
+        # --- Conversión a Decimal (Base 10) ---
+        elif tipo == "dec":
+            # No se necesita conversión, ya es un número decimal.
+            return str(decimal)
+        
+        # --- Caso no válido ---
+        else:
+            return "Tipo no válido"
+        
 
 # ---------- Punto de Entrada ----------
 
