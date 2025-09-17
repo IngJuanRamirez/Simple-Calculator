@@ -219,8 +219,10 @@ class Calculadora(QWidget):
         elif nuevo_modo == "Oct": digitos_validos = "01234567"
         elif nuevo_modo == "Hex": digitos_validos = "0123456789ABCDEF"
         else: digitos_validos = "0123456789."
+
         for digito, boton in self.ui.botones_digitos.items():
             boton.setEnabled(digito in digitos_validos)
+        
         valor_decimal = self.ui.display_dec.text() if self.ui.display_dec.text() else "0"
         self.ui.txtDisplay.setText(self.conversor(valor_decimal, self.mode))
 
@@ -228,7 +230,6 @@ class Calculadora(QWidget):
 
     def entrada_datos(self, valor: str):
         """Gestiona toda la entrada de datos y la lógica de cálculo."""
-        # CORRECCIÓN: Se restauró la lógica completa.
         OPERADORES_BINARIOS = ["+", "-", "*", "/", "**", "%"]
         OPERADORES_UNARIOS = ["sqrt", "factorial", "log"]
         DIGITOS_Y_LETRAS = "0123456789ABCDEF"
@@ -244,10 +245,16 @@ class Calculadora(QWidget):
                     self.ui.txtDisplay.setText(valor if current_text == "0" and valor != "." else current_text + valor)
             
             elif valor in OPERADORES_UNARIOS:
-                base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
-                numero_decimal = float(int(self.ui.txtDisplay.text(), base))
+                # --- CORRECCIÓN ---
+                # Lee como float en modo Dec, o convierte desde la base en otros modos.
+                numero_decimal = 0.0
+                if self.mode == "Dec":
+                    numero_decimal = float(self.ui.txtDisplay.text())
+                else:
+                    base = {"Hex": 16, "Oct": 8, "Bin": 2}[self.mode]
+                    numero_decimal = float(int(self.ui.txtDisplay.text(), base))
+                
                 resultado = 0.0
-
                 if valor == "sqrt":
                     if numero_decimal < 0: raise ValueError("Raíz de negativo no válida")
                     resultado = math.sqrt(numero_decimal)
@@ -265,17 +272,29 @@ class Calculadora(QWidget):
                 if self.primer_numero is not None and not self.esperando_segundo_numero:
                     self.entrada_datos("=")
                 
-                base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
-                self.primer_numero = float(int(self.ui.txtDisplay.text(), base))
+                # --- CORRECCIÓN ---
+                numero_a_guardar = 0.0
+                if self.mode == "Dec":
+                    numero_a_guardar = float(self.ui.txtDisplay.text())
+                else:
+                    base = {"Hex": 16, "Oct": 8, "Bin": 2}[self.mode]
+                    numero_a_guardar = float(int(self.ui.txtDisplay.text(), base))
+                self.primer_numero = numero_a_guardar
+                
                 self.operador_actual = valor
                 self.esperando_segundo_numero = True
 
             elif valor == "=":
                 if self.operador_actual and self.primer_numero is not None:
-                    base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
-                    segundo_numero = float(int(self.ui.txtDisplay.text(), base))
-                    resultado = 0.0
+                    # --- CORRECCIÓN ---
+                    segundo_numero = 0.0
+                    if self.mode == "Dec":
+                        segundo_numero = float(self.ui.txtDisplay.text())
+                    else:
+                        base = {"Hex": 16, "Oct": 8, "Bin": 2}[self.mode]
+                        segundo_numero = float(int(self.ui.txtDisplay.text(), base))
 
+                    resultado = 0.0
                     if self.operador_actual == "+": resultado = self.primer_numero + segundo_numero
                     elif self.operador_actual == "-": resultado = self.primer_numero - segundo_numero
                     elif self.operador_actual == "*": resultado = self.primer_numero * segundo_numero
