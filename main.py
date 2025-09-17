@@ -3,346 +3,277 @@ import sys, math
 from PySide6.QtWidgets import QApplication, QWidget, QLineEdit, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QMessageBox
 from PySide6.QtGui import QFont, QFontDatabase
 from PySide6.QtCore import Qt
+from functools import partial
+
+# ===================================================================
+# CLASE 1: LA FÁBRICA DE LA INTERFAZ (UI)
+# Su único trabajo es crear y posicionar los widgets.
+# ===================================================================
+class UI_Calculator:
+    def __init__(self, ventana_principal: QWidget):
+        """
+        Constructor que recibe la ventana principal (el "chasis")
+        para construir la interfaz dentro de ella.
+        """
+        # --- Creación de todos los widgets (piezas) ---
+        self.txtDisplay = QLineEdit("0", ventana_principal)
+        self.display_hex = QLineEdit(ventana_principal)
+        self.display_dec = QLineEdit(ventana_principal)
+        self.display_oct = QLineEdit(ventana_principal)
+        self.display_bin = QLineEdit(ventana_principal)
+        self.btn_hex = QPushButton("Hex")
+        self.btn_dec = QPushButton("Dec")
+        self.btn_oct = QPushButton("Oct")
+        self.btn_bin = QPushButton("Bin")
+        self.btn_a = QPushButton("A")
+        self.btn_b = QPushButton("B")
+        self.btn_c = QPushButton("C")
+        self.btn_d = QPushButton("D")
+        self.btn_e = QPushButton("E")
+        self.btn_f = QPushButton("F")
+        self.btn_0 = QPushButton("0")
+        self.btn_1 = QPushButton("1")
+        self.btn_2 = QPushButton("2")
+        self.btn_3 = QPushButton("3")
+        self.btn_4 = QPushButton("4")
+        self.btn_5 = QPushButton("5")
+        self.btn_6 = QPushButton("6")
+        self.btn_7 = QPushButton("7")
+        self.btn_8 = QPushButton("8")
+        self.btn_9 = QPushButton("9")
+        self.btn_decimal = QPushButton(".")
+        self.btn_igual = QPushButton("=")
+        self.btn_suma = QPushButton("+")
+        self.btn_resta = QPushButton("-")
+        self.btn_multiplicacion = QPushButton("*")
+        self.btn_division = QPushButton("/")
+        self.btn_potencia = QPushButton("xʸ")
+        self.btn_porcentaje = QPushButton("%")
+        self.btn_sqrt = QPushButton("√")
+        self.btn_log = QPushButton("Log")
+        self.btn_factorial = QPushButton("n!")
+        self.btn_ce = QPushButton("C")
+        self.btn_retroceso = QPushButton("←")
+        self.btn_mas_menos = QPushButton("+/-")
+
+        # --- Agrupación de botones ---
+        self.botones_digitos = {
+            '0': self.btn_0, '1': self.btn_1, '2': self.btn_2, '3': self.btn_3, '4': self.btn_4,
+            '5': self.btn_5, '6': self.btn_6, '7': self.btn_7, '8': self.btn_8, '9': self.btn_9,
+            'A': self.btn_a, 'B': self.btn_b, 'C': self.btn_c, 'D': self.btn_d, 'E': self.btn_e, 'F': self.btn_f,
+            '.': self.btn_decimal
+        }
+
+        # --- Estilos y configuración de widgets ---
+        font_id = QFontDatabase.addApplicationFont("src/fonts/digital-7/digital-7 (mono).ttf")
+        if font_id != -1:
+            family = QFontDatabase.applicationFontFamilies(font_id)[0]
+            self.txtDisplay.setFont(QFont(family, 28))
+        else:
+            self.txtDisplay.setFont(QFont("Arial", 24))
+            print("Error: No se pudo cargar la fuente.")
 
 
-class Calculadora(QWidget):
-    """
-    Clase principal de la calculadora gráfica.
+        self.txtDisplay.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.txtDisplay.setDisabled(True)
+        self.txtDisplay.setFixedSize(380, 50)
 
-    Hereda de QWidget y proporciona una interfaz gráfica
-    para realizar operaciones matemáticas básicas 
-    (suma, resta, multiplicación, división, potencia, 
-    módulo, factorial, raíz cuadrada) y conversiones
-    entre sistemas numéricos (decimal, binario, octal, hexadecimal).
-
-    Attributes:
-        txtDisplay (QLineEdit): Campo de texto donde se ingresan los números.
-
-    Methods:
-        entrada_datos(tipo: str): Agrega los numeros a la pantalla de la calculadora.
-    """
-
-    def __init__(self):
-        super().__init__() # Inicializador
-
-        # ---------- Configuraciones basicas para la ventana ----------
-
-        self.setWindowTitle("Calculadora - Modulo 1")
-        self.setGeometry(200, 200, 400, 400) # Los valores son: pos_x, pos_y, ancho, alto
-
-        # Establece el maximo tamaño para la ventana.
-        self.setFixedSize(400, 400) # Ancho y alto
-
-        # Estilo de la ventana: Ventana Blanco, Letras Negro.
-        self.setStyleSheet(
+        ventana_principal.setStyleSheet(
             "background-color: white;" \
             "color: black;" \
             "font-weight: bold;"
             )
 
-        # Cargar la fuente desde la ruta específica
-        font_id = QFontDatabase.addApplicationFont("src/fonts/digital-7/digital-7 (mono).ttf")
-        
-        # Verificar si la fuente se cargó correctamente
-        if font_id != -1:
-            family = QFontDatabase.applicationFontFamilies(font_id)[0]
-            # Establecer la fuente para el display
-            txt_display_font = QFont(family, 24)
-            self.txtDisplay = QLineEdit(self)
-            self.txtDisplay.setFont(txt_display_font)
-        else:
-            # Si no se pudo cargar, usar una fuente predeterminada
-            self.txtDisplay = QLineEdit(self)
-            self.txtDisplay.setFont(QFont("Arial", 24))
-            print("Error: No se pudo cargar la fuente desde la ruta especificada.")
-        
-        self.txtDisplay.setAlignment(Qt.AlignmentFlag.AlignRight)
-        # Establecemos como falso la entrada de texto
-        self.txtDisplay.setDisabled(True)
-        self.txtDisplay.setFixedSize(380, 50)
+        for btn in [self.btn_hex, self.btn_dec, self.btn_oct, self.btn_bin]:
+            btn.setStyleSheet("background-color: #a7c957; color: black;")
+        for btn in [self.btn_ce, self.btn_retroceso]:
+            btn.setStyleSheet("background-color: #e56b6f; color: black;")
 
+        # --- Organización en Layouts ---
+        # 1. Crear UN layout principal que contendrá todo
+        main_layout = QVBoxLayout()
+
+        # 2. Añadir el display principal
+        main_layout.addWidget(self.txtDisplay)
+        
+        # 3. Crear el layout para los displays de conversión y añadirlo
+        displays_layout = QVBoxLayout()
+        for btn, display in [(self.btn_hex, self.display_hex), (self.btn_dec, self.display_dec), (self.btn_oct, self.display_oct), (self.btn_bin, self.display_bin)]:
+            row = QHBoxLayout()
+            row.addWidget(btn)
+            row.addWidget(display)
+            display.setDisabled(True)
+            display.setStyleSheet("border: none; color: #555;")
+            displays_layout.addLayout(row)
+        main_layout.addLayout(displays_layout)
+
+        # 4. Crear la parrilla de botones y añadirla
+        grid_layout_config = [
+            [self.btn_a, self.btn_factorial, self.btn_porcentaje, self.btn_ce, self.btn_retroceso],
+            [self.btn_b, self.btn_log, self.btn_sqrt, self.btn_potencia, self.btn_division],
+            [self.btn_c, self.btn_7, self.btn_8, self.btn_9, self.btn_multiplicacion],
+            [self.btn_d, self.btn_4, self.btn_5, self.btn_6, self.btn_resta],
+            [self.btn_e, self.btn_1, self.btn_2, self.btn_3, self.btn_suma],
+            [self.btn_f, self.btn_mas_menos, self.btn_0, self.btn_decimal, self.btn_igual]
+        ]
+        for row_widgets in grid_layout_config:
+            row_layout = QHBoxLayout()
+            for widget in row_widgets:
+                row_layout.addWidget(widget)
+            main_layout.addLayout(row_layout)
+        
+        # 5. Establecer el layout principal en la ventana
+        ventana_principal.setLayout(main_layout)
+
+    # Agragado como quality of life.
+    def change_mod_color(self, select_mode : str, values : str) -> None:
+        # Regresar cualquier cambio al original
+        for btn in [self.btn_hex, self.btn_dec, self.btn_oct, self.btn_bin]:
+            btn.setStyleSheet("background-color: #a7c957; color: black;")
+
+        #actualizamos los botones de dígitos.
+        for digito, boton in self.botones_digitos.items():
+            if digito in values:
+                # Si el botón es válido, limpia su estilo para que
+                # herede el estilo por defecto de la ventana.
+                boton.setStyleSheet("")
+            else:
+                # Si no es válido, lo ponemos gris para que parezca deshabilitado.
+                boton.setStyleSheet("background-color: #D1D1D1; color: #black;")
+
+
+        # Cambio de color en el boton de modo
+        if select_mode == "Dec":
+            self.btn_dec.setStyleSheet("background-color: blue;")
+        elif select_mode == "Bin":
+            self.btn_bin.setStyleSheet("background-color: blue;")
+        elif select_mode == "Hex":
+            self.btn_hex.setStyleSheet("background-color: blue;")
+        elif select_mode == "Oct":
+            self.btn_oct.setStyleSheet("background-color: blue;")
+
+
+
+# ===================================================================
+# CLASE 2: EL INGENIERO / CONTROLADOR
+# Contiene la lógica, el estado y conecta los cables.
+# ===================================================================
+class Calculadora(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        # --- Configuraciones de la Ventana (el "chasis") ---
+        self.setWindowTitle("Calculadora Modular")
+        self.setGeometry(200, 200, 400, 400)
+        self.setFixedSize(400, 400)
+
+        # --- Lógica y Estado de la Calculadora ---
         self.primer_numero = None
         self.operador_actual = ""
         self.esperando_segundo_numero = False
+        self.mode = "Dec"
 
-        # ---------- Botones de Calculadora ----------
+        # --- El Ingeniero le pide a la Fábrica que construya la UI ---
+        self.ui = UI_Calculator(self)
 
-        # ---------- Resultados ----------
-
-        label_hex = QLabel("Hex: ")
-        label_dec = QLabel("Dec: ")
-        label_oct = QLabel("Oct: ")
-        label_bin = QLabel("Bin: ")
+        # --- El Ingeniero conecta los cables ---
+        self._conectar_senales()
         
-        # Display Bin
-        self.display_bin = QLineEdit(self)
-        self.display_bin.setDisabled(True)
-        self.display_bin.setStyleSheet("border: none;")
+        # --- Establece el estado inicial de la UI ---
+        self.cambiar_modo(self.mode)
+
+
+
+
+    ###### Funciones de la calculadora #####
+    def _conectar_senales(self):
+        """Conecta todos los widgets de la UI a los métodos de esta clase usando partial."""
+        # Conexión de dígitos y letras
+        for digito, boton in self.ui.botones_digitos.items():
+            boton.clicked.connect(partial(self.entrada_datos, digito))
+
+        # Conexiones de operadores y funciones
+        self.ui.btn_igual.clicked.connect(partial(self.entrada_datos, "="))
+        self.ui.btn_suma.clicked.connect(partial(self.entrada_datos, "+"))
+        self.ui.btn_resta.clicked.connect(partial(self.entrada_datos, "-"))
+        self.ui.btn_multiplicacion.clicked.connect(partial(self.entrada_datos, "*"))
+        self.ui.btn_division.clicked.connect(partial(self.entrada_datos, "/"))
+        self.ui.btn_potencia.clicked.connect(partial(self.entrada_datos, "**"))
+        self.ui.btn_porcentaje.clicked.connect(partial(self.entrada_datos, "%"))
+        self.ui.btn_sqrt.clicked.connect(partial(self.entrada_datos, "sqrt"))
+        self.ui.btn_log.clicked.connect(partial(self.entrada_datos, "log"))
+        self.ui.btn_factorial.clicked.connect(partial(self.entrada_datos, "factorial"))
+        self.ui.btn_ce.clicked.connect(partial(self.entrada_datos, "clear"))
+        self.ui.btn_retroceso.clicked.connect(partial(self.entrada_datos, "back"))
         
-        # Display Hex
-        self.display_hex = QLineEdit(self)
-        self.display_hex.setDisabled(True)
-        self.display_hex.setStyleSheet("border: none;")
+        # Conexiones de modos
+        self.ui.btn_hex.clicked.connect(partial(self.cambiar_modo, "Hex"))
+        self.ui.btn_dec.clicked.connect(partial(self.cambiar_modo, "Dec"))
+        self.ui.btn_oct.clicked.connect(partial(self.cambiar_modo, "Oct"))
+        self.ui.btn_bin.clicked.connect(partial(self.cambiar_modo, "Bin"))
 
-        # Display Oct
-        self.display_oct = QLineEdit(self)
-        self.display_oct.setDisabled(True)
-        self.display_oct.setStyleSheet("border: none;")
+    def cambiar_modo(self, nuevo_modo: str):
+        self.mode = nuevo_modo
 
-        # Display Dec
-        self.display_dec = QLineEdit(self)
-        self.display_dec.setDisabled(True)
-        self.display_dec.setStyleSheet("border: none;")
+        if nuevo_modo == "Bin": digitos_validos = "01"
+        elif nuevo_modo == "Oct": digitos_validos = "01234567"
+        elif nuevo_modo == "Hex": digitos_validos = "0123456789ABCDEF"
+        else: digitos_validos = "0123456789."
+        for digito, boton in self.ui.botones_digitos.items():
+            boton.setEnabled(digito in digitos_validos)
+        valor_decimal = self.ui.display_dec.text() if self.ui.display_dec.text() else "0"
+        self.ui.txtDisplay.setText(self.conversor(valor_decimal, self.mode))
 
-        # ---------- Fila 1 ----------
-
-        btn_a = QPushButton("A")
-        btn_factorial = QPushButton("n!")
-        btn_factorial.clicked.connect(lambda: self.entrada_datos("factorial"))
-        btn_porcentaje = QPushButton("%")
-        btn_ce = QPushButton("C")
-        btn_retroceso = QPushButton("←")
-
-        # Un color rojo para los botones de borrado.
-        btn_ce.setStyleSheet("background-color: red; color: black;")
-        btn_retroceso.setStyleSheet("background-color: red; color: black;")
-
-        btn_ce.clicked.connect(lambda: self.entrada_datos("clear"))
-        btn_retroceso.clicked.connect(lambda: self.entrada_datos("back"))
-        
-
-        # ---------- Fila 2 ----------
-
-        btn_b = QPushButton("B")
-        btn_log = QPushButton("Log")
-        btn_log.clicked.connect(lambda: self.entrada_datos("log"))
-        btn_sqrt = QPushButton("√")
-        btn_sqrt.clicked.connect(lambda: self.entrada_datos("sqrt"))
-        btn_potencia = QPushButton("X" + "\u02b8") # Utilizo unicode para la y en superíndice.
-        btn_potencia.clicked.connect(lambda: self.entrada_datos("**"))
-        btn_division = QPushButton("/")
-        btn_division.clicked.connect(lambda: self.entrada_datos("/"))
-
-
-        # ---------- Fila 3 ----------
-
-        btn_c = QPushButton("C")
-        btn_7 = QPushButton("7")
-        btn_7.clicked.connect(lambda: self.entrada_datos("7"))
-        btn_8 = QPushButton("8")
-        btn_8.clicked.connect(lambda: self.entrada_datos("8"))
-        btn_9 = QPushButton("9")
-        btn_9.clicked.connect(lambda: self.entrada_datos("9"))
-        btn_multiplicacion = QPushButton("*")
-        btn_multiplicacion.clicked.connect(lambda: self.entrada_datos("*"))
-
-
-        # ---------- Fila 4 ----------
-
-        btn_d = QPushButton("D")
-        btn_4 = QPushButton("4")
-        btn_4.clicked.connect(lambda: self.entrada_datos("4"))
-        btn_5 = QPushButton("5")
-        btn_5.clicked.connect(lambda: self.entrada_datos("5"))
-        btn_6 = QPushButton("6")
-        btn_6.clicked.connect(lambda: self.entrada_datos("6"))
-        btn_resta = QPushButton("-")
-        btn_resta.clicked.connect(lambda: self.entrada_datos("-"))
-
-
-        # ---------- Fila 5 ----------
-
-        btn_e = QPushButton("E")
-        btn_1 = QPushButton("1")
-        btn_1.clicked.connect(lambda: self.entrada_datos("1"))
-        btn_2 = QPushButton("2")
-        btn_2.clicked.connect(lambda: self.entrada_datos("2"))
-        btn_3 = QPushButton("3")
-        btn_3.clicked.connect(lambda: self.entrada_datos("3"))
-        btn_suma = QPushButton("+")
-        btn_suma.clicked.connect(lambda: self.entrada_datos("+"))
-        
-
-        # ---------- Fila 5 ----------
-
-        btn_f = QPushButton("F")
-        btn_mas_igual = QPushButton("+/=")
-        btn_0 = QPushButton("0")
-        btn_0.clicked.connect(lambda: self.entrada_datos("0"))
-        btn_decimal = QPushButton(".")
-        btn_decimal.clicked.connect(lambda: self.entrada_datos("."))
-        btn_igual = QPushButton("=")
-        btn_igual.clicked.connect(lambda: self.entrada_datos("="))
-
-
-
-
-        # ---------- Layouts ----------
-
-        # Display Resultado (Display)
-        layout = QVBoxLayout()
-        layout.addWidget(self.txtDisplay)
-
-
-        # Resultados Hex, Dec, etc...
-        resultados = QVBoxLayout()
-
-        # Hex
-        hex_result = QHBoxLayout()
-        hex_result.addWidget(label_hex)
-        hex_result.addWidget(self.display_hex)
-        resultados.addLayout(hex_result)
-        
-        # Dec
-        dec_result = QHBoxLayout()
-        dec_result.addWidget(label_dec)
-        dec_result.addWidget(self.display_dec)
-        resultados.addLayout(dec_result)
-
-        # Oct
-        oct_result = QHBoxLayout()
-        oct_result.addWidget(label_oct)
-        oct_result.addWidget(self.display_oct)
-        resultados.addLayout(oct_result)
-
-        # Bin
-        bin_result = QHBoxLayout()
-        bin_result.addWidget(label_bin)
-        bin_result.addWidget(self.display_bin)
-        resultados.addLayout(bin_result)
-
-        layout.addLayout(resultados)
-        
-        
-        # Fila 1
-        fila_1 = QHBoxLayout()
-        fila_1.addWidget(btn_a)
-        fila_1.addWidget(btn_factorial)
-        fila_1.addWidget(btn_porcentaje)
-        fila_1.addWidget(btn_ce)
-        fila_1.addWidget(btn_retroceso)
-        layout.addLayout(fila_1)
-
-
-        # Fila 2
-        fila_2 = QHBoxLayout()
-        fila_2.addWidget(btn_b)
-        fila_2.addWidget(btn_log)
-        fila_2.addWidget(btn_sqrt)
-        fila_2.addWidget(btn_potencia)
-        fila_2.addWidget(btn_division)
-        layout.addLayout(fila_2)
-
-
-        # Fila 3
-        fila_3 = QHBoxLayout()
-        fila_3.addWidget(btn_c)
-        fila_3.addWidget(btn_7)
-        fila_3.addWidget(btn_8)
-        fila_3.addWidget(btn_9)
-        fila_3.addWidget(btn_multiplicacion)
-        layout.addLayout(fila_3)
-
-
-        # Fila 4
-        fila_4 = QHBoxLayout()
-        fila_4.addWidget(btn_d)
-        fila_4.addWidget(btn_4)
-        fila_4.addWidget(btn_5)
-        fila_4.addWidget(btn_6)
-        fila_4.addWidget(btn_resta)
-        layout.addLayout(fila_4)
-
-
-        # Fila 5
-        fila_5 = QHBoxLayout()
-        fila_5.addWidget(btn_e)
-        fila_5.addWidget(btn_1)
-        fila_5.addWidget(btn_2)
-        fila_5.addWidget(btn_3)
-        fila_5.addWidget(btn_suma)
-        layout.addLayout(fila_5)
-
-
-        # Fila 6
-        fila_6 = QHBoxLayout()
-        fila_6.addWidget(btn_f)
-        fila_6.addWidget(btn_mas_igual)
-        fila_6.addWidget(btn_0)
-        fila_6.addWidget(btn_decimal)
-        fila_6.addWidget(btn_igual)
-        layout.addLayout(fila_6)
-
-
-        # Se renderiza todo el Layout
-        self.setLayout(layout)
-
-    
-    # Reemplaza tu función entrada_datos por completo con esta versión
+        self.ui.change_mod_color(self.mode, digitos_validos)
 
     def entrada_datos(self, valor: str):
-        """
-        Gestiona la entrada de datos y la lógica de una calculadora estándar.
-        """
-        # Operadores que necesitan dos números (binarios)
+        """Gestiona toda la entrada de datos y la lógica de cálculo."""
+        # CORRECCIÓN: Se restauró la lógica completa.
         OPERADORES_BINARIOS = ["+", "-", "*", "/", "**", "%"]
-        # Operadores que se aplican a un solo número (unarios)
         OPERADORES_UNARIOS = ["sqrt", "factorial", "log"]
-
+        DIGITOS_Y_LETRAS = "0123456789ABCDEF"
+        
         try:
-            # --- Lógica para NÚMEROS (0-9) ---
-            if valor.isdigit():
+            if valor in DIGITOS_Y_LETRAS or valor == ".":
                 if self.esperando_segundo_numero:
-                    self.txtDisplay.setText(valor)
+                    self.ui.txtDisplay.setText(valor)
                     self.esperando_segundo_numero = False
                 else:
-                    if self.txtDisplay.text() == "0":
-                        self.txtDisplay.setText(valor)
-                    else:
-                        self.txtDisplay.setText(self.txtDisplay.text() + valor)
-
-            # --- Lógica para el PUNTO DECIMAL (.) ---
-            elif valor == ".":
-                if "." not in self.txtDisplay.text():
-                    self.txtDisplay.setText(self.txtDisplay.text() + ".")
+                    current_text = self.ui.txtDisplay.text()
+                    if valor == "." and "." in current_text: return
+                    self.ui.txtDisplay.setText(valor if current_text == "0" and valor != "." else current_text + valor)
             
-            # --- Lógica para OPERADORES UNARIOS (sqrt, factorial, etc.) ---
             elif valor in OPERADORES_UNARIOS:
-                numero_actual = float(self.txtDisplay.text())
+                base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
+                numero_decimal = float(int(self.ui.txtDisplay.text(), base))
                 resultado = 0.0
 
                 if valor == "sqrt":
-                    if numero_actual < 0:
-                        QMessageBox.critical(self, "Error", "Entrada inválida para raíz cuadrada.")
-                        return
-                    resultado = math.sqrt(numero_actual)
+                    if numero_decimal < 0: raise ValueError("Raíz de negativo no válida")
+                    resultado = math.sqrt(numero_decimal)
                 elif valor == "factorial":
-                    if numero_actual < 0 or numero_actual != int(numero_actual):
-                        QMessageBox.critical(self, "Error", "Entrada inválida para factorial.")
-                        return
-                    resultado = float(math.factorial(int(numero_actual)))
+                    if numero_decimal < 0 or numero_decimal != int(numero_decimal): raise ValueError("Factorial no entero o negativo")
+                    resultado = float(math.factorial(int(numero_decimal)))
                 elif valor == "log":
-                    if numero_actual <= 0:
-                        QMessageBox.critical(self, "Error", "Entrada inválida para logaritmo.")
-                        return
-                    resultado = math.log10(numero_actual)
+                    if numero_decimal <= 0: raise ValueError("Logaritmo no positivo")
+                    resultado = math.log10(numero_decimal)
                 
                 self._actualizar_displays(resultado)
                 self.esperando_segundo_numero = True
 
-            # --- Lógica para OPERADORES BINARIOS (+, -, *, /, **, %) ---
             elif valor in OPERADORES_BINARIOS:
                 if self.primer_numero is not None and not self.esperando_segundo_numero:
                     self.entrada_datos("=")
                 
-                self.primer_numero = float(self.txtDisplay.text())
+                base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
+                self.primer_numero = float(int(self.ui.txtDisplay.text(), base))
                 self.operador_actual = valor
                 self.esperando_segundo_numero = True
 
-            # --- Lógica para el botón IGUAL (=) ---
             elif valor == "=":
                 if self.operador_actual and self.primer_numero is not None:
-                    segundo_numero = float(self.txtDisplay.text())
+                    base = {"Hex": 16, "Dec": 10, "Oct": 8, "Bin": 2}[self.mode]
+                    segundo_numero = float(int(self.ui.txtDisplay.text(), base))
                     resultado = 0.0
 
                     if self.operador_actual == "+": resultado = self.primer_numero + segundo_numero
@@ -351,9 +282,7 @@ class Calculadora(QWidget):
                     elif self.operador_actual == "**": resultado = self.primer_numero ** segundo_numero
                     elif self.operador_actual == "%": resultado = self.primer_numero % segundo_numero
                     elif self.operador_actual == "/":
-                        if segundo_numero == 0:
-                            QMessageBox.critical(self, "Error", "No se puede dividir por cero.")
-                            return
+                        if segundo_numero == 0: raise ZeroDivisionError("División por cero")
                         resultado = self.primer_numero / segundo_numero
                     
                     self._actualizar_displays(resultado)
@@ -361,113 +290,60 @@ class Calculadora(QWidget):
                     self.operador_actual = ""
                     self.esperando_segundo_numero = True
 
-            # --- Lógica para LIMPIAR (C) ---
             elif valor == "clear":
-                self.txtDisplay.setText("0")
-                self.display_bin.clear()
-                self.display_hex.clear()
-                self.display_oct.clear()
-                self.display_dec.clear()
+                self.ui.txtDisplay.setText("0")
+                for display in [self.ui.display_bin, self.ui.display_hex, self.ui.display_oct, self.ui.display_dec]: display.clear()
                 self.primer_numero = None
                 self.operador_actual = ""
                 self.esperando_segundo_numero = False
 
-            # --- Lógica para RETROCESO (←) ---
             elif valor == "back":
-                texto_actual = self.txtDisplay.text()
+                texto_actual = self.ui.txtDisplay.text()
                 nuevo_texto = texto_actual[:-1]
-                self.txtDisplay.setText(nuevo_texto if nuevo_texto else "0")
+                self.ui.txtDisplay.setText(nuevo_texto if nuevo_texto else "0")
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Ocurrió un error: {e}")
+            QMessageBox.critical(self, "Error de Cálculo", str(e))
             self.entrada_datos("clear")
 
-    # --- NUEVA FUNCIÓN AUXILIAR ---
-    # Añade esta función dentro de tu clase Calculadora
-
     def _actualizar_displays(self, resultado_numerico: float):
-        """Función auxiliar para actualizar todos los displays con un resultado."""
-        # Muestra el resultado en el display principal
-        if resultado_numerico.is_integer():
-            self.txtDisplay.setText(str(int(resultado_numerico)))
-        else:
-            # Formateamos para evitar exceso de decimales
-            self.txtDisplay.setText(f"{resultado_numerico:.10g}")
-
-        # Actualiza los displays de conversión con la parte entera del resultado
         numero_entero_str = str(int(resultado_numerico))
-        self.display_bin.setText(self.conversor(numero_entero_str, "bin"))
-        self.display_hex.setText(self.conversor(numero_entero_str, "hex"))
-        self.display_oct.setText(self.conversor(numero_entero_str, "oct"))
-        self.display_dec.setText(self.conversor(numero_entero_str, "dec"))
-
-
-    def conversor(self, number: str, tipo: str) -> str:
-        """
-        Convierte un número decimal (en formato string) a otro sistema numérico
-        utilizando el algoritmo de división y residuo.
         
-        Args:
-            number (str): El número en base 10 para convertir.
-            tipo (str): El sistema al que se convertirá ("bin", "oct", "hex", "dec").
-            
-        Returns:
-            str: El número convertido en formato de cadena de texto.
-        """
-        try:
-            decimal = int(number)
-        except (ValueError, TypeError):
-            return "Error"
-
-        # Caso especial: si el número es 0, el resultado es "0" en cualquier base.
-        if decimal == 0:
-            return "0"
-
-        # --- Conversión a Binario (Base 2) ---
-        if tipo == "bin":
-            resultado_str = ""
-            num_temp = decimal
-            while num_temp > 0:
-                residuo = num_temp % 2
-                resultado_str = str(residuo) + resultado_str
-                num_temp //= 2  # División entera
-            return resultado_str
-
-        # --- Conversión a Octal (Base 8) ---
-        elif tipo == "oct":
-            resultado_str = ""
-            num_temp = decimal
-            while num_temp > 0:
-                residuo = num_temp % 8
-                resultado_str = str(residuo) + resultado_str
-                num_temp //= 8
-            return resultado_str
-
-        # --- Conversión a Hexadecimal (Base 16) ---
-        elif tipo == "hex":
-            # Mapa para los dígitos mayores a 9 (A=10, B=11, etc.)
-            mapa_hex = "0123456789ABCDEF"
-            resultado_str = ""
-            num_temp = decimal
-            while num_temp > 0:
-                residuo = num_temp % 16
-                # Usamos el residuo como índice para obtener el caracter correcto
-                resultado_str = mapa_hex[residuo] + resultado_str
-                num_temp //= 16
-            return resultado_str
-
-        # --- Conversión a Decimal (Base 10) ---
-        elif tipo == "dec":
-            # No se necesita conversión, ya es un número decimal.
-            return str(decimal)
+        texto_display_principal = self.conversor(numero_entero_str, self.mode)
         
-        # --- Caso no válido ---
+        if not resultado_numerico.is_integer() and self.mode == "Dec":
+            self.ui.txtDisplay.setText(f"{resultado_numerico:.10g}")
         else:
-            return "Tipo no válido"
-        
+            self.ui.txtDisplay.setText(texto_display_principal)
 
-# ---------- Punto de Entrada ----------
+        self.ui.display_bin.setText(self.conversor(numero_entero_str, "bin"))
+        self.ui.display_hex.setText(self.conversor(numero_entero_str, "hex"))
+        self.ui.display_oct.setText(self.conversor(numero_entero_str, "oct"))
+        self.ui.display_dec.setText(numero_entero_str)
 
+    def conversor(self, number_str: str, tipo: str) -> str:
+        try:
+            decimal = int(number_str)
+        except (ValueError, TypeError): return "Error"
+
+        tipo = tipo.lower()
+
+        if decimal == 0: return "0"
+        if tipo == "dec": return str(decimal)
+        base_map = {"bin": 2, "oct": 8, "hex": 16}
+        if tipo not in base_map: return "Tipo no válido"
+        base = base_map[tipo]
+        mapa_hex = "0123456789ABCDEF"
+        resultado_str = ""
+        num_temp = decimal
+        while num_temp > 0:
+            residuo = num_temp % base
+            resultado_str = mapa_hex[residuo] + resultado_str
+            num_temp //= base
+        return resultado_str
+
+
+# ---------- Punto de Entrada de la Aplicación ----------
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ventana = Calculadora()
